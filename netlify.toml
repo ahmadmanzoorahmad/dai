@@ -1,0 +1,19 @@
+[build]
+  command = "pnpm --filter @workspace/dashboard-converter run build"
+  publish = "artifacts/dashboard-converter/dist/public"
+
+[build.environment]
+  NODE_VERSION = "20"
+  PNPM_VERSION = "9"
+  BASE_PATH = "/"
+
+# REQUIRED: Set VITE_API_URL in Netlify → Site settings → Environment variables
+# Point it at your deployed API server, e.g.:
+#   VITE_API_URL = "https://insightai-api.onrender.com"
+# The API server (artifacts/api-server) must be deployed separately on a
+# platform like Render, Railway, or Fly.io with a PostgreSQL database attached.
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
