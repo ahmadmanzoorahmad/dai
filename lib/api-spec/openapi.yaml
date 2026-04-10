@@ -1,0 +1,406 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: dashboards
+    description: Dashboard management
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /dashboards:
+    get:
+      operationId: listDashboards
+      tags: [dashboards]
+      summary: List all dashboards
+      description: Returns all saved dashboards sorted by creation date
+      responses:
+        "200":
+          description: List of dashboards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DashboardSummary"
+
+    post:
+      operationId: createDashboard
+      tags: [dashboards]
+      summary: Create a new dashboard from a URL or uploaded text
+      description: Submits a URL or text content for AI processing and dashboard generation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDashboardBody"
+      responses:
+        "201":
+          description: Dashboard created and processing started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /dashboards/{id}:
+    get:
+      operationId: getDashboard
+      tags: [dashboards]
+      summary: Get a dashboard by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Dashboard with full data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      operationId: deleteDashboard
+      tags: [dashboards]
+      summary: Delete a dashboard
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Dashboard deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /dashboards/upload:
+    post:
+      operationId: uploadDashboard
+      tags: [dashboards]
+      summary: Upload a file for dashboard generation
+      description: Accepts file upload (PDF, CSV, Excel, Word) for AI processing
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                title:
+                  type: string
+              required:
+                - file
+      responses:
+        "201":
+          description: Dashboard created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+        "400":
+          description: Invalid file or upload error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /dashboards/stats:
+    get:
+      operationId: getDashboardStats
+      tags: [dashboards]
+      summary: Get dashboard library stats
+      description: Returns aggregate stats (total count, source type breakdown, recent activity)
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    DashboardStatus:
+      type: string
+      enum: [pending, processing, completed, failed]
+
+    SourceType:
+      type: string
+      enum: [url, file, text]
+
+    ChartType:
+      type: string
+      enum: [bar, line, pie, area, scatter, none]
+
+    KpiCard:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: string
+        unit:
+          type: string
+        trend:
+          type: string
+          enum: [up, down, neutral]
+        trendValue:
+          type: string
+      required:
+        - label
+        - value
+
+    ChartConfig:
+      type: object
+      properties:
+        title:
+          type: string
+        type:
+          $ref: "#/components/schemas/ChartType"
+        dataKey:
+          type: string
+        categoryKey:
+          type: string
+        description:
+          type: string
+      required:
+        - title
+        - type
+        - dataKey
+        - categoryKey
+
+    DataColumn:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        type:
+          type: string
+          enum: [string, number, date, boolean]
+        important:
+          type: boolean
+      required:
+        - key
+        - label
+        - type
+        - important
+
+    ProcessedDashboardData:
+      type: object
+      properties:
+        title:
+          type: string
+        summary:
+          type: string
+        insights:
+          type: array
+          items:
+            type: string
+        kpis:
+          type: array
+          items:
+            $ref: "#/components/schemas/KpiCard"
+        columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/DataColumn"
+        charts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChartConfig"
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - title
+        - summary
+        - insights
+        - kpis
+        - columns
+        - charts
+        - rows
+
+    Dashboard:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        sourceType:
+          $ref: "#/components/schemas/SourceType"
+        sourceUrl:
+          type: string
+          nullable: true
+        sourceFileName:
+          type: string
+          nullable: true
+        status:
+          $ref: "#/components/schemas/DashboardStatus"
+        processedData:
+          $ref: "#/components/schemas/ProcessedDashboardData"
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - sourceType
+        - status
+        - createdAt
+        - updatedAt
+
+    DashboardSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        sourceType:
+          $ref: "#/components/schemas/SourceType"
+        sourceUrl:
+          type: string
+          nullable: true
+        sourceFileName:
+          type: string
+          nullable: true
+        status:
+          $ref: "#/components/schemas/DashboardStatus"
+        kpiCount:
+          type: integer
+        chartCount:
+          type: integer
+        rowCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - sourceType
+        - status
+        - kpiCount
+        - chartCount
+        - rowCount
+        - createdAt
+        - updatedAt
+
+    CreateDashboardBody:
+      type: object
+      properties:
+        sourceType:
+          $ref: "#/components/schemas/SourceType"
+        sourceUrl:
+          type: string
+          nullable: true
+        textContent:
+          type: string
+          nullable: true
+        title:
+          type: string
+          nullable: true
+      required:
+        - sourceType
+
+    DashboardStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        bySourceType:
+          type: object
+          properties:
+            url:
+              type: integer
+            file:
+              type: integer
+            text:
+              type: integer
+          required:
+            - url
+            - file
+            - text
+        recentCount:
+          type: integer
+        completedCount:
+          type: integer
+      required:
+        - total
+        - bySourceType
+        - recentCount
+        - completedCount

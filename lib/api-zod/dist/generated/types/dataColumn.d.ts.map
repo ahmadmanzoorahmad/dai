@@ -1,0 +1,1 @@
+{"version":3,"file":"dataColumn.d.ts","sourceRoot":"","sources":["../../../src/generated/types/dataColumn.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,cAAc,EAAE,MAAM,kBAAkB,CAAC;AAEvD,MAAM,WAAW,UAAU;IACzB,GAAG,EAAE,MAAM,CAAC;IACZ,KAAK,EAAE,MAAM,CAAC;IACd,IAAI,EAAE,cAAc,CAAC;IACrB,SAAS,EAAE,OAAO,CAAC;CACpB"}
